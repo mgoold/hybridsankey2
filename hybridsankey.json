@@ -1,0 +1,45 @@
+{
+"attributeinfo": {
+"attributename":"Device Type",
+"attributearray":["Desktop","Tablet"]
+},
+"nodeinfo": {
+"nodetype":"Page Name",
+"nodetypearray":["Home Page","Offer Page","Signup Page","Search Page","Product Marketing Page","Purchase Page","Hard Bounce"]
+},
+"nodes":[
+{"node":0,"name":"Home Page","nodetype":"Home Page"},
+{"node":1,"name":"Offer Type 1","nodetype":"Offer Page"},
+{"node":2,"name":"Offer Type 2","nodetype":"Offer Page"},
+{"node":3,"name":"Sign-up Page","nodetype":"Signup Page"},
+{"node":4,"name":"Main Search Page","nodetype":"Search Page"},
+{"node":5,"name":"Sign-up Page","nodetype":"Signup Page"},
+{"node":6,"name":"Product Offerings","nodetype":"Product Marketing Page"},
+{"node":7,"name":"Purchase Page","nodetype":"Purchase Page"},
+{"node":8,"name":"Sign-up Page","nodetype":"Signup Page"},
+{"node":9,"name":"Purchase Page","nodetype":"Purchase Page"},
+{"node":10,"name":"Home Page","nodetype":"Home Page"},
+{"node":11,"name":"Hard Bounce","nodetype":"Hard Bounce"},
+{"node":12,"name":"Hard Bounce","nodetype":"Hard Bounce"}
+],
+"links":[
+{"source":0,"target":1,"value":4,"attrib":"Desktop"},
+{"source":0,"target":1,"value":2,"attrib":"Tablet"},
+{"source":0,"target":2,"value":8,"attrib":"Desktop"},
+{"source":0,"target":2,"value":4,"attrib":"Tablet"},
+{"source":1,"target":3,"value":2,"attrib":"Desktop"},
+{"source":1,"target":4,"value":2,"attrib":"Desktop"},
+{"source":1,"target":12,"value":2,"attrib":"Desktop"},
+{"source":2,"target":5,"value":4,"attrib":"Desktop"},
+{"source":2,"target":5,"value":2,"attrib":"Tablet"},
+{"source":2,"target":6,"value":4,"attrib":"Desktop"},
+{"source":2,"target":6,"value":2,"attrib":"Tablet"},
+{"source":5,"target":7,"value":2,"attrib":"Desktop"},
+{"source":5,"target":7,"value":1,"attrib":"Tablet"},
+{"source":5,"target":8,"value":2,"attrib":"Desktop"},
+{"source":5,"target":8,"value":1,"attrib":"Tablet"},
+{"source":6,"target":9,"value":2,"attrib":"Desktop"},
+{"source":6,"target":10,"value":2,"attrib":"Desktop"},
+{"source":6,"target":10,"value":1,"attrib":"Tablet"},
+{"source":6,"target":11,"value":1,"attrib":"Tablet"}
+]}

@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>SANKEY Experiment</title>
+<style>
+.node rect {
+  cursor: move;
+  fill-opacity: .9;
+  shape-rendering: crispEdges;
+}
+.node text {
+  font: "Arial";
+  pointer-events: none;
+  text-shadow: 0 1px 0 #fff;
+}
+
+.link {
+  fill: none;
+  stroke-opacity: .2;
+}
+.link:hover {
+  stroke-opacity: .5;
+  
+}
+
+#legend1 {
+float: left; 
+<!--
+outline: thin solid red; 
+-->
+width:120px; height: 300px;}
+
+</style>
+
+<body>
+<div id="legend1"></div>
+<div id="chart"></div>
+<script type="text/javascript" src="d3.min.js"></script>
+<script src="hybridsankey.js"></script>
+<script>
+
+var units = "Widgets"; 
+
+var margin = {top: 10, right: 10, bottom: 10, left: 10};
+var width = 700 - margin.left - margin.right;
+var height = 300 - margin.top - margin.bottom;
+
+var formatNumber = d3.format(",.0f"),    
+    format = function(d) { return formatNumber(d) + " " + units; },
+    color = d3.scale.category20();
+
+var svg = d3.select("#chart").append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    //~ .attr("style", "outline: thin solid red;") 
+  .append("g")
+    .attr("transform", 
+          "translate(" + margin.left + "," + margin.top + ")");
+
+// Set the sankey diagram properties
+
+
+
+var nta=[];
+var lta=[];
+
+d3.json("hybridsankey.json", function(error, graph) {	
+	lta=graph.attributeinfo.attributearray;
+	nta=graph.nodeinfo.nodetypearray;
+});
+
+var sankey = d3.sankey()
+    .nodetypearray(nta)
+    .nodeWidth(36)
+    .nodePadding(40)
+    .size([width, height]);
+
+var path = sankey.link();
+
+var anylink=function() {
+
+	var curvature = .5;
+		
+	   function link(d) { 
+		   d=JSON.parse(d);
+		   console.log('d',d);
+		var  x0=0,
+		  x1 = x0+100,
+		  xi = d3.interpolateNumber(x0, x1),
+		  x2 = xi(curvature),
+		  x3 = xi(1 - curvature),
+		  y0=0,
+		  y1 = y0+100;
+
+	  return "M" + x0 + "," + y0
+		   + "C" + x2 + "," + y0
+		   + " " + x3 + "," + y1
+		   + " " + x1 + "," + y1;
+	}
+	
+	link.curvature = function(_) {
+	  if (!arguments.length) return curvature;
+	  curvature = +_;
+	  return link;
+	};
+
+	return link;
+};
+
+var anypath = anylink();
+
+var bouncecolor="#FF0000"
+
+var linkcoldomain=["#0033cc","#33cc00","#ffcc33"];
+
+var nodecoldomain=["#CC9900","#99CCFF","#CCFFCC","#9900cc","#cc9900","#00cc99","#993300","#009933","#66ccff","#ff9900","#00ff99","#9900ff","#0066ff"];
+
+
+// load the data
+d3.json("hybridsankey.json", function(error, graph) {
+	
+	//~ lta=graph.attributeinfo.attributearray;
+	//~ nta=graph.nodeinfo.nodetypearray;
+
+  sankey	
+	  .nodetypearray(nta)
+      .nodes(graph.nodes)
+      .links(graph.links)
+      .layout(32);
+
+// add in the links
+  var link = svg.append("g").selectAll(".link")
+      .data(graph.links)
+    .enter().append("path")
+      .attr("class", "link")
+      .attr("d", path)
+      .style("stroke", function (d) { return linkcoldomain[lta.indexOf(d.attrib)]})
+      .style("stroke-width", function(d) { return Math.max(1, d.dy); })
+      .sort(function(a, b) { return b.dy - a.dy; });
+
+// add the link titles
+  link.append("title")
+        .text(function(d) {
+            return d.source.name + " → " + 
+                d.target.name + "\n" + format(d.value); });
+
+// add in the nodes
+  var node = svg.append("g").selectAll(".node")
+      .data(graph.nodes)
+    .enter().append("g")
+      .attr("class", "node")
+      .attr("transform", function(d) { 
+          return "translate(" + d.x + "," + d.y + ")"; })
+    .call(d3.behavior.drag()
+      .origin(function(d) { return d; })
+      .on("dragstart", function() { 
+          this.parentNode.appendChild(this); })
+      .on("drag", dragmove));
+
+// add the rectangles for the nodes
+  node.append("rect")
+      .attr("height", function(d) { return d.dy; })
+      .attr("width", sankey.nodeWidth())
+      .style("fill", function(d) { 
+		  var nodecol="";
+		  if (d.nodetype=="Hard Bounce") {
+			   nodecol=bouncecolor;
+		  } else {nodecol=nodecoldomain[nta.indexOf(d.nodetype)]; }
+          return nodecol;
+          
+          })
+      .style("stroke", function(d) { 
+          return d3.rgb(d.color).darker(2); })
+    .append("title")
+      .text(function(d) { 
+          return d.name + "\n" + format(d.value); });
+
+// add in the title for the nodes
+  node.append("text")
+      .attr("x", -6)
+      .attr("y", function(d) { return d.dy / 2; })
+      .attr("dy", ".35em")
+      .attr("text-anchor", "end")
+      .attr("transform", null)
+      .text(function(d) { return d.name; });
+    //~ .filter(function(d) { return d.x < width / 2; })
+      //~ .attr("x", 6 + sankey.nodeWidth())
+      //~ .attr("text-anchor", "start");
+
+// the function for moving the nodes
+  function dragmove(d) {
+    d3.select(this).attr("transform", 
+        "translate(" + (
+            d.x = Math.max(0, Math.min(width - d.dx, d3.event.x))
+        )
+        + "," + (
+            d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))
+        ) + ")");
+    sankey.relayout();
+    link.attr("d", path);
+  }
+  
+// legend section
+	//~ var leg1wt=120;
+	//~ var leg1ht=300;
+//~ 
+	//~ var legend1 = d3.select("#legend1").append("svg")
+		//~ .attr("width", leg1wt)
+		//~ .attr("height", leg1ht)
+		//~ .attr("style", "outline: thin solid blue;") 
+	  //~ .append("g");
+	//~ 
+	//~ var leg1_group=legend1.selectAll('g')
+		//~ .data(lta)
+		//~ .enter()
+		//~ .append('g')
+		//~ .attr("transform", function(d, i) { 
+			//~ var trht=((leg1ht)/2)-((lta.length+1)*45/2)+((i+1)*45);
+			//~ return "translate(0," + trht +")";}
+		//~ );
+
+
+	//~ var modlinkarray=function (lta) {
+		//~ lta2=[];
+//~ 
+		//~ lta.forEach(function(d,i) {
+			//~ ltatemp={};
+			//~ ltatemp["x"]=20;
+			//~ ltatemp["y"]=(i+1)*45;		
+			//~ lta2.push(JSON.stringify(ltatemp));
+		//~ });
+		//~ 
+		//~ return lta2;
+		//~ 
+	//~ }
+//~ 
+	//~ var lta2=modlinkarray(lta);
+//~ 
+	//~ console.log('lta2', lta2);
+//~ 
+	//~ var anylink = legend1.append("g").selectAll('anylink')	
+	  //~ .data(lta2)
+	  //~ .enter().append("anypath")
+      //~ .attr("class", "anylink")
+      //~ .attr("d", anypath)
+      //~ .style("stroke", "#FF0000")
+      //~ .style("stroke-width", 20);
+      //~ .sort(function(a, b) { return b.dy - a.dy; });
+
+	//~ leg1_group.append('rect')
+		//~ .attr("height", 15)
+		//~ .attr("y",0)
+		//~ .attr("width", 15)
+		//~ .attr("x", 20)
+		//~ .style("fill", function (d,i) {return linkcoldomain[i];})
+		//~ .style("opacity",.2);
+//~ 
+	//~ leg1_group.append('text')
+			//~ .text(function(d){return d})
+			//~ .style("fill", 'black')
+			//~ .attr("y", 0)
+			//~ .attr("x", 20)
+			//~ .attr("text-anchor", "beginning")
+			//~ .style("font-size", "12px")
+			//~ .attr("transform", "translate(20,10)");
+
+    
+});
+ 
+</script>
+ 
+</body>
+</html>
