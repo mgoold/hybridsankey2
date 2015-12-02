@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>SANKEY Experiment</title>
 <style>
 .node rect {
   cursor: move;
@@ -34,7 +33,7 @@ width:120px; height: 300px;}
 <body>
 <div id="legend1"></div>
 <div id="chart"></div>
-<script type="text/javascript" src="d3.min.js"></script>
+<script src="http://d3js.org/d3.v3.min.js"></script>
 <script src="hybridsankey.js"></script>
 <script>
 
@@ -69,7 +68,7 @@ d3.json("hybridsankey.json", function(error, graph) {
 });
 
 var sankey = d3.sankey()
-    .nodetypearray(nta)
+    //~ .nodetypearray(nta)
     .nodeWidth(36)
     .nodePadding(40)
     .size([width, height]);
@@ -122,7 +121,7 @@ d3.json("hybridsankey.json", function(error, graph) {
 	//~ nta=graph.nodeinfo.nodetypearray;
 
   sankey	
-	  .nodetypearray(nta)
+	  //~ .nodetypearray(nta)
       .nodes(graph.nodes)
       .links(graph.links)
       .layout(32);
