@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
+<title>SANKEY Experiment</title>
 <style>
 .node rect {
   cursor: move;
@@ -21,27 +22,20 @@
   
 }
 
-#legend1 {
-float: left; 
-<!--
-outline: thin solid red; 
--->
-width:120px; height: 300px;}
-
 </style>
 
 <body>
-<div id="legend1"></div>
+
 <div id="chart"></div>
-<script src="http://d3js.org/d3.v3.min.js"></script>
-<script src="hybridsankey.js"></script>
+<script src="d3.min.js"></script>
+<script src="hybridsankeylralgo122215.js"></script>
 <script>
 
-var units = "Widgets"; 
+var units = "Visits"; 
 
 var margin = {top: 10, right: 10, bottom: 10, left: 10};
-var width = 700 - margin.left - margin.right;
-var height = 300 - margin.top - margin.bottom;
+var width = 950 - margin.left - margin.right;
+var height = 500 - margin.top - margin.bottom;
 
 var formatNumber = d3.format(",.0f"),    
     format = function(d) { return formatNumber(d) + " " + units; },
@@ -57,18 +51,7 @@ var svg = d3.select("#chart").append("svg")
 
 // Set the sankey diagram properties
 
-
-
-var nta=[];
-var lta=[];
-
-d3.json("hybridsankey.json", function(error, graph) {	
-	lta=graph.attributeinfo.attributearray;
-	nta=graph.nodeinfo.nodetypearray;
-});
-
 var sankey = d3.sankey()
-    //~ .nodetypearray(nta)
     .nodeWidth(36)
     .nodePadding(40)
     .size([width, height]);
@@ -77,51 +60,50 @@ var path = sankey.link();
 
 var anylink=function() {
 
-	var curvature = .5;
-		
-	   function link(d) { 
-		   d=JSON.parse(d);
-		   console.log('d',d);
-		var  x0=0,
-		  x1 = x0+100,
-		  xi = d3.interpolateNumber(x0, x1),
-		  x2 = xi(curvature),
-		  x3 = xi(1 - curvature),
-		  y0=0,
-		  y1 = y0+100;
+  var curvature = .5;
+    
+     function link(d) { 
+       d=JSON.parse(d);
+       console.log('d',d);
+    var  x0=0,
+      x1 = x0+100,
+      xi = d3.interpolateNumber(x0, x1),
+      x2 = xi(curvature),
+      x3 = xi(1 - curvature),
+      y0=0,
+      y1 = y0+100;
 
-	  return "M" + x0 + "," + y0
-		   + "C" + x2 + "," + y0
-		   + " " + x3 + "," + y1
-		   + " " + x1 + "," + y1;
-	}
-	
-	link.curvature = function(_) {
-	  if (!arguments.length) return curvature;
-	  curvature = +_;
-	  return link;
-	};
+    return "M" + x0 + "," + y0
+       + "C" + x2 + "," + y0
+       + " " + x3 + "," + y1
+       + " " + x1 + "," + y1;
+  }
+  
+  link.curvature = function(_) {
+    if (!arguments.length) return curvature;
+    curvature = +_;
+    return link;
+  };
 
-	return link;
+  return link;
 };
 
 var anypath = anylink();
 
 var bouncecolor="#FF0000"
 
-var linkcoldomain=["#0033cc","#33cc00","#ffcc33"];
+var linkcoldomain=["#0033cc","#ff6600","#0099cc"];
 
 var nodecoldomain=["#CC9900","#99CCFF","#CCFFCC","#9900cc","#cc9900","#00cc99","#993300","#009933","#66ccff","#ff9900","#00ff99","#9900ff","#0066ff"];
 
 
 // load the data
-d3.json("hybridsankey.json", function(error, graph) {
-	
-	//~ lta=graph.attributeinfo.attributearray;
-	//~ nta=graph.nodeinfo.nodetypearray;
+d3.json("hybridsankeyt3.json", function(error, graph) {
+  
+  var lta=graph.attributeinfo.attributearray;
+  var nta=graph.nodeinfo.nodetypearray;
 
-  sankey	
-	  //~ .nodetypearray(nta)
+  sankey  
       .nodes(graph.nodes)
       .links(graph.links)
       .layout(32);
@@ -160,10 +142,10 @@ d3.json("hybridsankey.json", function(error, graph) {
       .attr("height", function(d) { return d.dy; })
       .attr("width", sankey.nodeWidth())
       .style("fill", function(d) { 
-		  var nodecol="";
-		  if (d.nodetype=="Hard Bounce") {
-			   nodecol=bouncecolor;
-		  } else {nodecol=nodecoldomain[nta.indexOf(d.nodetype)]; }
+      var nodecol="";
+      if (d.nodetype=="Hard Bounce") {
+         nodecol=bouncecolor;
+      } else {nodecol=nodecoldomain[nta.indexOf(d.nodetype)]; }
           return nodecol;
           
           })
@@ -180,7 +162,7 @@ d3.json("hybridsankey.json", function(error, graph) {
       .attr("dy", ".35em")
       .attr("text-anchor", "end")
       .attr("transform", null)
-      .text(function(d) { return d.name; });
+      .text(function(d) { return d.node+' '+d.name; });
     //~ .filter(function(d) { return d.x < width / 2; })
       //~ .attr("x", 6 + sankey.nodeWidth())
       //~ .attr("text-anchor", "start");
@@ -198,69 +180,6 @@ d3.json("hybridsankey.json", function(error, graph) {
     link.attr("d", path);
   }
   
-// legend section
-	//~ var leg1wt=120;
-	//~ var leg1ht=300;
-//~ 
-	//~ var legend1 = d3.select("#legend1").append("svg")
-		//~ .attr("width", leg1wt)
-		//~ .attr("height", leg1ht)
-		//~ .attr("style", "outline: thin solid blue;") 
-	  //~ .append("g");
-	//~ 
-	//~ var leg1_group=legend1.selectAll('g')
-		//~ .data(lta)
-		//~ .enter()
-		//~ .append('g')
-		//~ .attr("transform", function(d, i) { 
-			//~ var trht=((leg1ht)/2)-((lta.length+1)*45/2)+((i+1)*45);
-			//~ return "translate(0," + trht +")";}
-		//~ );
-
-
-	//~ var modlinkarray=function (lta) {
-		//~ lta2=[];
-//~ 
-		//~ lta.forEach(function(d,i) {
-			//~ ltatemp={};
-			//~ ltatemp["x"]=20;
-			//~ ltatemp["y"]=(i+1)*45;		
-			//~ lta2.push(JSON.stringify(ltatemp));
-		//~ });
-		//~ 
-		//~ return lta2;
-		//~ 
-	//~ }
-//~ 
-	//~ var lta2=modlinkarray(lta);
-//~ 
-	//~ console.log('lta2', lta2);
-//~ 
-	//~ var anylink = legend1.append("g").selectAll('anylink')	
-	  //~ .data(lta2)
-	  //~ .enter().append("anypath")
-      //~ .attr("class", "anylink")
-      //~ .attr("d", anypath)
-      //~ .style("stroke", "#FF0000")
-      //~ .style("stroke-width", 20);
-      //~ .sort(function(a, b) { return b.dy - a.dy; });
-
-	//~ leg1_group.append('rect')
-		//~ .attr("height", 15)
-		//~ .attr("y",0)
-		//~ .attr("width", 15)
-		//~ .attr("x", 20)
-		//~ .style("fill", function (d,i) {return linkcoldomain[i];})
-		//~ .style("opacity",.2);
-//~ 
-	//~ leg1_group.append('text')
-			//~ .text(function(d){return d})
-			//~ .style("fill", 'black')
-			//~ .attr("y", 0)
-			//~ .attr("x", 20)
-			//~ .attr("text-anchor", "beginning")
-			//~ .style("font-size", "12px")
-			//~ .attr("transform", "translate(20,10)");
 
     
 });

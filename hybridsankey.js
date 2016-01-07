@@ -1,10 +1,10 @@
 d3.sankey = function() {
-	
-var nodetypearray2=[];	
-				
+  
+var nodetypearray2=[];  
+        
   var sankey = {},
       nodeWidth = 24,
-      nodePadding = 8,
+      nodePadding = 10,
       size = [1, 1],
       nodes = [],
       links = [];
@@ -40,8 +40,8 @@ var nodetypearray2=[];
   };
     
 
-      		
-  sankey.layout = function(iterations) {	   
+          
+  sankey.layout = function(iterations) {     
     computeNodeLinks();
     computeNodeValues();
     computeNodeBreadths();
@@ -103,13 +103,13 @@ function clone(obj) {
       var source = link.source,
           target = link.target;
       if (typeof source === "number") {
-		  var targetLink=clone(source);
-		  source = link.source = nodes[link.source];
-		}      
-	  if (typeof target === "number") {
-		  nodes[link.target].targetLink=targetLink;
-		  target = link.target = nodes[link.target];
-	  }
+      var targetLink=clone(source);
+      source = link.source = nodes[link.source];
+    }      
+    if (typeof target === "number") {
+      nodes[link.target].targetLink=targetLink;
+      target = link.target = nodes[link.target];
+    }
       source.sourceLinks.push(link);
       target.targetLinks.push(link);
       
@@ -126,11 +126,11 @@ function clone(obj) {
     });
   }
 
-	//~ console.log('graph',graph);
+  //~ console.log('graph',graph);
 
   function computeNodeBreadths() {
 
-	  
+    
     var remainingNodes = nodes,
         nextNodes,
         x = .6;
@@ -149,7 +149,7 @@ function clone(obj) {
     }
 
 //     moveSinksRight(x); --disabling this call is all that's required to give the chart
-//	the "each step right is a visit" look of a visits chart
+//  the "each step right is a visit" look of a visits chart
  
     scaleNodeBreadths((width - nodeWidth) / (x - 1));
   }
@@ -182,194 +182,219 @@ function clone(obj) {
     var lowestrank=0;
 
   function computeNodeDepths(iterations) {
-	
-		  
+  
+      
     var nodesByBreadth = d3.nest()
         .key(function(d) {return d.x; }).sortKeys(d3.ascending)
         .entries(nodes)
         .map(function(d) {return d.values; }); 
-	
+  
     initializeNodeDepth();   
    
+  console.log('highestnode',highestnode,'lowestnode',lowestnode,'highestrank',highestrank);   
+    console.log('nodesbybreadth', nodesByBreadth);
+    console.log('size',size);
     
-	var bottommost=nodes[lowestnode].y+nodes[lowestnode].dy;
+  var nodefloor=0;
 
-	for (i2=0; i2=100; i2++)  {
-    	    
-    	positionnodes(nodePadding,nodePadding);    
-    	    
-	    bottommost=nodes[lowestnode].y+nodes[lowestnode].dy;	    
-	    if (bottommost<size[1]) { 
-			var highnodepos=(nodes[highestnode].y+(size[1]-bottommost))/2;
-			positionnodes(nodePadding,highnodepos); 
-			break;
-		}
-	    
-		nodePadding*=.99
+  for (i2=0; i2<50; i2+=1)  {
     
-	}	
-	
-	function positionnodes(nodePadding,highnodepos) {
-		relaxRightToLeft2(nodePadding);
-	    relaxRightToLeft3(nodePadding,highnodepos);
-	}
+    nodefloor=nodes[lowestnode].y+nodes[lowestnode].dy;  //the bottom of the lowest node.
+    positionnodes(nodePadding); 
+    nodePadding*=.99
+    
+    } 
+            
+  function positionnodes(nodePadding) {
+    relaxRightToLeft2(nodePadding);
+      relaxLefttoRight(nodePadding);
+  }
 
     function initializeNodeDepth() {
-		var ky = d3.min(nodesByBreadth, function(nodes) {  
-		return (size[1] - (nodes.length - 1) * nodePadding) / d3.sum(nodes, value);
-		});
+    
+    var ky = d3.min(nodesByBreadth, function(nodes) {  
+      return (size[1] - (nodes.length - 1) * nodePadding) / d3.sum(nodes, value);
+    });
 
-		var rankcount=0;
-		var prevnodecount=0;
-								
-		nodesByBreadth.forEach(function(nodes)	{		
-	
-			nodes.forEach(function(node, i) { 		
-				node.dy = node.value * ky;
-			});		
+    var rankcount=0;
+    var prevnodecount=0;
+    var rankSum=0;  
+                  
+    nodesByBreadth.forEach(function(nodes)  {   
+  
+      nodes.forEach(function(node, i) {     
+        node.dy = node.value * ky;
+      });   
 
-			nodes.forEach(function(node, i) { 
-				if (node.targetLinks.length) {
-					node.targetLinks.forEach(function (obj) {
-						node.targeti=obj.source.i;
-					});					
-				} else {
-					node.targeti=i;					
-				};
-				node.i=i;
-			});	
-			
-			nodes.sort(
-				firstBy(function (a, b) { return a.targeti-b.targeti; })
-				.thenBy(function (a, b) { return b.value-a.value; })
-			);				
+      nodes.forEach(function(node, i) { 
+        if (node.targetLinks.length) {
+          var targetsum=0;
+          node.targetLinks.forEach(function (obj) { //for each node, sum the value of its lefthand links
+            targetsum+=obj.source.dy;
+            node.targeti=obj.source.i; //this is the 
+          });   
+          node.targetsum=targetsum;             
+        } else {
+          node.targetsum=node.dy;
+          node.targeti=i;         
+        };
+        node.sourcelinkcount=node.sourceLinks.length-1; 
+      }); 
+      
+      
+      if (rankcount<1) {              
+        nodes.sort(
+          firstBy(function (a, b) { return b.targetsum-a.targetsum; })
+        );        
+        
+  
+      } else {  
+        nodes.sort(
+          firstBy(function (a, b) { return a.targeti-b.targeti; })
+          .thenBy(function (a, b) { return b.dy-a.dy; })
+        );  
+                                        
+      }
 
-			var templinkrank = 0;
-			var temptarget = 0;
-			var j=0;
-			var rankSum=0;		
-			var nodecount=-1;
-			
-			nodes.forEach(function (node) {++nodecount;});
-				
-			nodes.forEach(function(node, i) { 
-				if (j==0) {
-					templinkrank = j;
-					temptarget = node.targeti;
-					if (node.targeti==0) {
-						highestnode=node.node;
-						highestrank=rankcount;
-						}
-				} else {
-					if (temptarget == node.targeti) {
-						templinkrank += 1;
-					} else {
-						temptarget = node.targeti;
-						templinkrank=0;
-					}
-				}
-								
-				if (i==nodecount) {
-					if (node.targeti==prevnodecount) {
-						lowestnode=node.node;
-						lowestrank=rankcount;
-					} 
-					prevnodecount=nodecount;
-				}
-				
-				node.i=i;
-				node.y=i;
-				node.templinkrank=templinkrank;
-				j+=1;			
-			});		
-			
-			rankcount+=1;
+      var templinkrank = 0;
+      var temptarget = 0; 
+      var nodecount=-1;
+      
+      nodes.forEach(function (node) {++nodecount;});
+        
+      nodes.forEach(function(node, i) { 
+        var j=0;  
+//        console.log('node',node);
+        node.i=i;
+                          
+        if (node.targeti==0 && node.i==0) { //if the left hand node you link to is 0, that means you're the highest in your stack
+          templinkrank = j;
+          temptarget = node.sourcei;
+          highestnode=node.node;
 
-		});
-					
-		links.forEach(function(link) {
-			link.dy = link.value * ky;
-		});
-					
+        } else {
+          if (temptarget == node.targeti) { //if next node shares same link, then increment templinkrank (link rank w/in same node)
+            templinkrank += 1;
+          } else {
+            temptarget = node.targeti; //else the new temp target is whatever left hand node goes with this node
+            templinkrank=0;
+          }
+        }
+                
+        if (i==nodecount && node.targeti>=prevnodecount) { //conversely, if you're the last node and you link to the lowest node to your left, you're the new lowest
+            lowestnode=node.node;
+            prevnodecount=nodecount;
+        }
+        
+        j+=1;                 
+
+        node.templinkrank=templinkrank;   
+      });   
+
+      
+      
+      rankcount+=1;
+
+    });
+          
+    links.forEach(function(link) {
+      link.dy = link.value * ky;
+    });
+      
+//    console.log('highestnode',highestnode,'lowestnode',lowestnode,'highestrank',highestrank);   
     }
 
 
 
-	var firstY, temprankSum;
+  var firstY, temprankSum;
 
 
-	function relaxRightToLeft2(nodePadding) {
-			
-			nodesByBreadth.slice().reverse().forEach(function(subnodes) {
-
-			subnodes.sort(
-				firstBy(function (a, b) { return a.targeti-b.targeti; })
-				.thenBy(function (a, b) { return b.value-a.value; })
-			);
-
-			subnodes.forEach(function(node) {
-				var ranksum=0;	
-				node.hassourcelinks=0;
-				if (node.sourceLinks.length>0) {				
-					node.sourceLinks.forEach(function(obj) {
-						ranksum +=obj.target.ranksum;				
-					});
-					ranksum += ((node.sourceLinks.length-1) * nodePadding)
-					node.ranksum=ranksum;
-					node.hassourcelinks=1;
-				} else {
-					node.ranksum=node.dy;
-				}
-
-			});
-			
-		});
-	}
-
- 	function relaxRightToLeft3(nodePadding,highnodepos) {
-		nodesByBreadth.slice().reverse().forEach(function(subnodes) {
-
-				var j=0;
-				if (j<=highestrank) {
-					
-					subnodes.sort(
-						firstBy(function (a, b) { return a.targeti-b.targeti; })
-						.thenBy(function (a, b) { return b.value-a.value; })
-					);
-		
-					var tempy=0;
-					
-					subnodes.forEach(function(node) {
-
-						if (node.node==highestnode) {
-							node.y=highnodepos;
-							tempy=node.y+node.ranksum+nodePadding;							
-						} else {
-							
-							if (node.sourceLinks.length>0) {
-								var firstY=0;
-								var endY=0;
-								node.sourceLinks.forEach(function(obj) {
-									if (obj.target.templinkrank==0) {
-										firstY=obj.target.y;										
-									} 		
-									endY=Math.max(obj.target.y+obj.target.dy,endY);
-								});
-								node.y=firstY+((endY-firstY)/2)-(node.dy/2)
-								tempy=node.y+node.ranksum+nodePadding;	
-							} else {
-								node.y=tempy;
-								tempy=node.y+node.ranksum+nodePadding;							
-							}
-
-						}														
-					});
-					
-					j+=1;
-				}
-		});
-	}
+  function relaxRightToLeft2(nodePadding) { //whole point of this function is assigning a summed spatial requirement to each node.  this sum is sum of reqs to its right
       
+//      console.log('nodePadding',nodePadding);
+      
+      nodesByBreadth.slice().reverse().forEach(function(subnodes) { 
+        
+        var thisranksum=0;
+        
+        subnodes.forEach(function(node) {
+          var ranksum=0;  
+          node.hassourcelinks=0;
+          if (node.sourceLinks.length>0) {  
+            var nodectr=[];     
+            node.sourceLinks.forEach(function(obj) {
+//              console.log('nodectr.indexOf(obj.node)',obj,obj.target.node,nodectr.indexOf(obj.target.node));
+              if (nodectr.indexOf(obj.target.node)==-1) {
+//                console.log('adding target ranksum',obj.target.node,obj.target.ranksum);
+                ranksum +=obj.target.ranksum;
+                nodectr.push(obj.target.node);
+              }
+               //bc we are summing the sizes of the links, should 
+              //~ ranksum +=obj.target.ranksum;       
+            });
+//            console.log('nodectr',node.node,nodectr.length-1);
+//            console.log('node ranksum',node.node,ranksum);
+            ranksum += (nodectr.length-1) * nodePadding;            
+            node.ranksum=ranksum;
+            node.hassourcelinks=1;
+            
+            node.sourceLinks.forEach(function(obj) {
+              nodes[obj.target.node].prevranksum=ranksum;     
+            });           
+            
+            
+          } else {
+            node.ranksum=node.dy;
+          }
+          
+          thisranksum+=ranksum;                   
+
+        });
+        
+        subnodes.forEach(function(node) {
+          node.thisranksum=thisranksum;
+        });
+        
+        
+      
+    });
+  }
+
+      
+  function relaxLefttoRight(nodePadding) {
+    var j=0;
+        
+    nodesByBreadth.slice().forEach(function(subnodes) {
+      var tempY=0;
+      subnodes.forEach(function(node) {   
+//        console.log('node',node);             
+        if (j==0) {           
+          node.y=size[1]/2-node.dy/2;                   
+        } else {
+            
+          if (node.i==0) {
+            node.y=node.sourcey+node.sourcedy/2-node.prevranksum/2+node.ranksum/2-node.dy/2;
+          } else {
+            node.y=tempY+node.ranksum/2-node.dy/2;
+          }
+          
+          tempY=node.y+node.dy/2+node.ranksum/2+nodePadding;  
+                                                                        
+        }
+        
+        node.sourceLinks.forEach(function(obj) {
+          nodes[obj.target.node].sourcedy=node.dy;
+          nodes[obj.target.node].sourcey=node.y;
+        }); 
+        
+      })
+      j+=1;
+        
+    });
+
+  }
+   
+
 
   }
 
@@ -400,7 +425,7 @@ function clone(obj) {
   }
 
   function center(node) {
-    	var ycenter=node.y + node.dy / 2
+      var ycenter=node.y + node.dy / 2
     return node.y + node.dy / 2;
   }
 
