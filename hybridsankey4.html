@@ -1,6 +1,6 @@
 <!DOCTYPE html>
 <meta charset="utf-8">
-<title>SANKEY Experiment</title>
+<title>Modified Sankey for Site Traffic Tracking</title>
 <style>
 .node rect {
   cursor: move;
@@ -13,10 +13,12 @@
   text-shadow: 0 1px 0 #fff;
 }
 
-.link {
+.path {
   fill: none;
   stroke-opacity: .2;
 }
+
+
 .link:hover {
   stroke-opacity: .5;
   
@@ -25,15 +27,21 @@
 </style>
 
 <body>
+<div>
+  <div id="linklegend" style="float:left"></div>
+  <div id="chart"></div>
+</div>
 
-<div id="chart"></div>
 <script src="d3.min.js"></script>
 <script src="hybridsankeylralgo122215.js"></script>
 <script>
 
+var pathdata=[{"x":100,"y":100}];
+
 var units = "Visits"; 
 
 var margin = {top: 10, right: 10, bottom: 10, left: 10};
+var linklegwidth=120;
 var width = 950 - margin.left - margin.right;
 var height = 500 - margin.top - margin.bottom;
 
@@ -41,10 +49,20 @@ var formatNumber = d3.format(",.0f"),
     format = function(d) { return formatNumber(d) + " " + units; },
     color = d3.scale.category20();
 
+//http://stackoverflow.com/questions/17217766/two-divs-side-by-side-fluid-display
+
 var svg = d3.select("#chart").append("svg")
     .attr("width", width + margin.left + margin.right)
     .attr("height", height + margin.top + margin.bottom)
-    //~ .attr("style", "outline: thin solid red;") 
+    // .attr("style", "outline: thin solid red;") 
+  .append("g")
+    .attr("transform", 
+          "translate(" + margin.left + "," + margin.top + ")");
+
+var legsvg = d3.select("#linklegend").append("svg")
+    .attr("width", linklegwidth + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+    // .attr("style", "outline: thin solid red;") 
   .append("g")
     .attr("transform", 
           "translate(" + margin.left + "," + margin.top + ")");
@@ -58,37 +76,6 @@ var sankey = d3.sankey()
 
 var path = sankey.link();
 
-var anylink=function() {
-
-  var curvature = .5;
-    
-     function link(d) { 
-       d=JSON.parse(d);
-       console.log('d',d);
-    var  x0=0,
-      x1 = x0+100,
-      xi = d3.interpolateNumber(x0, x1),
-      x2 = xi(curvature),
-      x3 = xi(1 - curvature),
-      y0=0,
-      y1 = y0+100;
-
-    return "M" + x0 + "," + y0
-       + "C" + x2 + "," + y0
-       + " " + x3 + "," + y1
-       + " " + x1 + "," + y1;
-  }
-  
-  link.curvature = function(_) {
-    if (!arguments.length) return curvature;
-    curvature = +_;
-    return link;
-  };
-
-  return link;
-};
-
-var anypath = anylink();
 
 var bouncecolor="#FF0000"
 
@@ -99,20 +86,66 @@ var nodecoldomain=["#CC9900","#99CCFF","#CCFFCC","#9900cc","#cc9900","#00cc99","
 
 // load the data
 d3.json("hybridsankeyt3.json", function(error, graph) {
-  
+
   var lta=graph.attributeinfo.attributearray;
   var nta=graph.nodeinfo.nodetypearray;
+
+  var legpadding=40;
+  var dlen=lta.length;
+  var ystart=(height/2)-(((dlen*100)+((dlen-1)*legpadding))/2);
+
+  var anylink = function() {
+
+    var curvature = .5;
+    // var iconht=(height-(legpadding*(dlen-1)))/dlen
+
+    // console.log('dlen',dlen);
+
+    function link(d,i) {
+
+        // console.log('d',d,'i',i);
+
+      var x0 = linklegwidth/2-50,
+          x1 = (linklegwidth/2-50)+100,
+          xi = d3.interpolateNumber(x0, x1),
+          x2 = xi(curvature),
+          x3 = xi(1 - curvature),
+          y0 = ystart+(i*(100+legpadding)),
+          y1 = ystart+(i*(100+legpadding))+100;
+
+          var svginst=
+                     "M" + x0 + "," + y1 + " "
+                   + "C" + x2 + "," + y1
+                   + " " + x3 + "," + y0
+                   + " " + x1 + "," + y0;
+
+           // console.log('svginst',svginst)
+
+      return svginst;
+    }
+
+    link.curvature = function(_) {
+      if (!arguments.length) return curvature;
+      curvature = +_;
+      return link;
+    };
+
+    return link;
+};
+
+var anypath=anylink();
+  
 
   sankey  
       .nodes(graph.nodes)
       .links(graph.links)
-      .layout(32);
+      .layout(32); 
 
 // add in the links
-  var link = svg.append("g").selectAll(".link")
+  var link = svg.append("g").selectAll(".path")
       .data(graph.links)
     .enter().append("path")
-      .attr("class", "link")
+      .attr("class", "path")
       .attr("d", path)
       .style("stroke", function (d) { return linkcoldomain[lta.indexOf(d.attrib)]})
       .style("stroke-width", function(d) { return Math.max(1, d.dy); })
@@ -162,10 +195,33 @@ d3.json("hybridsankeyt3.json", function(error, graph) {
       .attr("dy", ".35em")
       .attr("text-anchor", "end")
       .attr("transform", null)
-      .text(function(d) { return d.node+' '+d.name; });
-    //~ .filter(function(d) { return d.x < width / 2; })
-      //~ .attr("x", 6 + sankey.nodeWidth())
-      //~ .attr("text-anchor", "start");
+      .text(function(d) { return d.name; });
+
+
+//LEGEND SECTION
+
+var leglink = legsvg.append("g").selectAll(".anypath")
+    .data(lta)
+    .enter().append("path") //this must be "path", because that's the d3 helper for accepting svg coordinates
+    .attr("d", anypath) 
+    .attr("stroke", function (d) { return linkcoldomain[lta.indexOf(d)]})
+    .attr("fill","none")
+    .attr("stroke-opacity", .2)
+    .attr("stroke-width", 40);
+
+// add in the title for the nodes
+  legsvg.selectAll("text")
+    .data(lta)
+    .enter()
+    .append("text")
+    .attr("x",linklegwidth/2-20)
+    .attr("y",function(d,i) {
+      var y=ystart+(i*(100+legpadding))+50;
+      console.log('d',d,'i',i,"y",y);
+      return y;
+    })
+    .text(function(d) {return d});
+
 
 // the function for moving the nodes
   function dragmove(d) {
@@ -177,7 +233,7 @@ d3.json("hybridsankeyt3.json", function(error, graph) {
             d.y = Math.max(0, Math.min(height - d.dy, d3.event.y))
         ) + ")");
     sankey.relayout();
-    link.attr("d", path);
+    link.attr("d", link);
   }
   
 

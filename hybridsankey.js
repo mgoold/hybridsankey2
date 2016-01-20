@@ -1,6 +1,6 @@
 d3.sankey = function() {
   
-var nodetypearray2=[];  
+  var nodetypearray2=[];  
         
   var sankey = {},
       nodeWidth = 24,
@@ -69,6 +69,7 @@ function clone(obj) {
     var curvature = .5;
 
     function link(d) {
+      // console.log('d',d);
       var x0 = d.source.x + d.source.dx,
           x1 = d.target.x,
           xi = d3.interpolateNumber(x0, x1),
